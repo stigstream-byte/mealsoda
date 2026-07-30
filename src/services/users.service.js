@@ -86,8 +86,72 @@ const updateOwnProfile = async (userId, { name, username, email }) => {
   return result.rows[0];
 };
 
+const searchUsers = async ({ query, is_admin }) => {
+  let sql = 'SELECT id, username, email, is_admin, created_at FROM public.users WHERE 1=1';
+  const params = [];
+
+  if (query) {
+    params.push(`%${query.trim()}%`);
+    sql += ` AND (username ILIKE $${params.length} OR email ILIKE $${params.length})`;
+  }
+
+  if (is_admin === 'true' || is_admin === true) {
+    sql += ' AND is_admin = true';
+  }
+
+  sql += ' ORDER BY created_at DESC LIMIT 50';
+
+  const result = await db.query(sql, params);
+  return result.rows;
+};
+
+const grantAdmin = async (username) => {
+  if (!username) {
+    const err = new Error('Username is required.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const query = `
+    UPDATE public.users
+    SET is_admin = true
+    WHERE username ILIKE $1
+    RETURNING id, username, is_admin, created_at;
+  `;
+  const result = await db.query(query, [username.trim()]);
+
+  if (result.rows.length === 0) {
+    const err = new Error(`No user found named "@${username}"`);
+    err.statusCode = 404;
+    throw err;
+  }
+
+  return result.rows[0];
+};
+
+const revokeAdmin = async (id) => {
+  const query = `
+    UPDATE public.users
+    SET is_admin = false
+    WHERE id = $1
+    RETURNING id, username, is_admin;
+  `;
+  const result = await db.query(query, [id]);
+
+  if (result.rows.length === 0) {
+    const err = new Error('User not found.');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  return { message: 'Admin access revoked', user: result.rows[0] };
+};
+
 module.exports = {
   getUserProfile,
   getOwnProfile,
   updateOwnProfile,
+  searchUsers,
+  grantAdmin,
+  revokeAdmin,
 };

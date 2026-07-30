@@ -28,8 +28,40 @@ const updateOwnProfile = async (req, res, next) => {
   }
 };
 
+const searchUsers = async (req, res, next) => {
+  try {
+    const { query, is_admin } = req.query;
+    const users = await usersService.searchUsers({ query, is_admin });
+    return successResponse(res, 200, { users });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const grantAdmin = async (req, res, next) => {
+  try {
+    const { username } = req.body;
+    const user = await usersService.grantAdmin(username);
+    return successResponse(res, 200, { user });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const revokeAdmin = async (req, res, next) => {
+  try {
+    const result = await usersService.revokeAdmin(req.params.id);
+    return res.status(200).json({ success: true, message: result.message });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getPublicProfile,
   getOwnProfile,
   updateOwnProfile,
+  searchUsers,
+  grantAdmin,
+  revokeAdmin,
 };
