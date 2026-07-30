@@ -38,6 +38,17 @@ const login = async (req, res, next) => {
   }
 };
 
+const changePassword = async (req, res, next) => {
+  try {
+    const { current_password, new_password } = req.body;
+    const result = await authService.changePassword(req.user.id, { current_password, new_password });
+
+    return successResponse(res, 200, { message: result.message });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const logout = async (req, res, next) => {
   try {
     const userId = req.user ? req.user.id : null;
@@ -82,6 +93,7 @@ const getMe = async (req, res, next) => {
 module.exports = {
   register,
   login,
+  changePassword,
   logout,
   refresh,
   getMe,

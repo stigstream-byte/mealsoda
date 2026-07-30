@@ -30,8 +30,21 @@ const validateLogin = (req, res, next) => {
     return errorResponse(res, 400, 'Password is required.');
   }
 
-  // Attach resolved identifier to req.body.identifier
   req.body.identifier = resolvedIdentifier.trim();
+  next();
+};
+
+const validateChangePassword = (req, res, next) => {
+  const { current_password, new_password } = req.body;
+
+  if (!current_password || typeof current_password !== 'string') {
+    return errorResponse(res, 400, 'Current password is required.');
+  }
+
+  if (!new_password || typeof new_password !== 'string' || new_password.length < 6) {
+    return errorResponse(res, 400, 'New password must be at least 6 characters long.');
+  }
+
   next();
 };
 
@@ -94,6 +107,7 @@ const validateBannedContent = (req, res, next) => {
 module.exports = {
   validateRegister,
   validateLogin,
+  validateChangePassword,
   validateHistory,
   validateContinueWatching,
   validateWatchlist,

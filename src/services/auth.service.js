@@ -109,6 +109,40 @@ const login = async ({ identifier, password }) => {
   };
 };
 
+const changePassword = async (userId, { current_password, new_password }) => {
+  const userRes = await db.query('SELECT id, password_hash FROM public.users WHERE id = $1', [userId]);
+
+  if (userRes.rows.length === 0) {
+    const err = new Error('User not found.');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const user = userRes.rows[0];
+
+  if (!user.password_hash) {
+    const err = new Error('No password is set on this account.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const isMatch = await bcrypt.compare(current_password, user.password_hash);
+  if (!isMatch) {
+    const err = new Error('Current password is incorrect.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const newHash = await bcrypt.hash(new_password, 10);
+
+  await db.query(
+    'UPDATE public.users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+    [newHash, userId]
+  );
+
+  return { message: 'Password updated successfully.' };
+};
+
 const logout = async (userId, refreshToken) => {
   if (userId) {
     await db.query('UPDATE public.users SET refresh_token = NULL WHERE id = $1', [userId]);
@@ -184,6 +218,7 @@ const getMe = async (userId) => {
 module.exports = {
   register,
   login,
+  changePassword,
   logout,
   refreshSession,
   getMe,
