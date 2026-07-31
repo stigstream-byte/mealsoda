@@ -16,6 +16,9 @@ const { errorResponse } = require('./utils/response.util');
 
 const app = express();
 
+// Trust reverse proxy (Nginx / Cloudflare / VPS reverse proxy) for accurate client IP rate limiting
+app.set('trust proxy', 1);
+
 // Security Middlewares
 app.use(helmet());
 
