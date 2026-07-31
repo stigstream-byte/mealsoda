@@ -46,8 +46,10 @@ const saveContinueWatching = async (userId, data) => {
       thumbnail_url, last_watched_at, updated_at
     )
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
-    ON CONFLICT (user_id, tmdb_id, season, episode)
+    ON CONFLICT (user_id, tmdb_id, type)
     DO UPDATE SET
+      season = EXCLUDED.season,
+      episode = EXCLUDED.episode,
       progress_seconds = EXCLUDED.progress_seconds,
       duration_seconds = COALESCE(EXCLUDED.duration_seconds, continue_watching.duration_seconds),
       progress_percentage = EXCLUDED.progress_percentage,

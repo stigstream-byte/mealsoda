@@ -45,6 +45,27 @@ async function runMigration() {
         FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE SET NULL;
     `);
 
+    // 4. Clean up duplicate continue_watching entries before creating unique index
+    console.log('Deduplicating continue_watching table...');
+    await client.query(`
+      DELETE FROM public.continue_watching c1
+      USING public.continue_watching c2
+      WHERE c1.user_id = c2.user_id
+        AND c1.tmdb_id = c2.tmdb_id
+        AND c1.type = c2.type
+        AND (
+          c1.last_watched_at < c2.last_watched_at
+          OR (c1.last_watched_at = c2.last_watched_at AND c1.id < c2.id)
+        );
+    `);
+
+    // 5. Create unique index for continue_watching (user_id, tmdb_id, type)
+    console.log('Creating unique index on continue_watching (user_id, tmdb_id, type)...');
+    await client.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS continue_watching_user_tmdb_type_idx 
+      ON public.continue_watching (user_id, tmdb_id, type);
+    `);
+
     await client.query('COMMIT');
     console.log('Database migration completed successfully!');
   } catch (err) {
